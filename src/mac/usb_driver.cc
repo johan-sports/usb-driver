@@ -1,5 +1,5 @@
 #include "../usb_driver.h"
-#include "../utils.h"
+#include "utils.h"
 
 #include <sys/param.h>
 

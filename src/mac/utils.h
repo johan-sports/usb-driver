@@ -14,16 +14,22 @@
 // Log to the stderr
 #define elog(fmt, args...) log(stderr, fmt, ##args)
 
-////////////////////////////////////////////////////////////////////////////////
-// Converters
-////////////////////////////////////////////////////////////////////////////////
-/**
-    * Convert the given CFString to a CString
-    */
-char *cfStringRefToCString(CFStringRef cfString);
-/**
-    */
-char *cfTypeToCString(CFTypeRef cfString);
+namespace USBDriver
+{
+  namespace Utils
+  {
+    ////////////////////////////////////////////////////////////////////////////////
+    // Converters
+    ////////////////////////////////////////////////////////////////////////////////
+    /**
+     * Convert the given CFString to a CString
+     */
+    char *cfStringRefToCString(CFStringRef cfString);
+    /**
+     */
+    char *cfTypeToCString(CFTypeRef cfString);
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Formatters
@@ -39,7 +45,7 @@ char *cfTypeToCString(CFTypeRef cfString);
 #define PROP_VAL(dict, key)                                   \
   ({                                                          \
     CFTypeRef _str = CFDictionaryGetValue(dict, CFSTR(key));  \
-    cfTypeToCString(_str);                                    \
+    USBDriver::Utils::cfTypeToCString(_str);                  \
   })
 
 
