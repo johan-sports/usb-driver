@@ -25,16 +25,18 @@ namespace USBDriver
   /**
    * Get data for all connected devices.
    */
-  std::vector<USBDevicePtr> GetDevices();
+  std::vector<USBDevicePtr> getDevices();
   /**
    * Get a device with the given UID.
    */
-  USBDevicePtr GetDevice(const std::string &uid);
+  USBDevicePtr getDevice(const std::string &uid);
 
   /**
    * Unmount the device with the given UID.
    */
-  bool Unmount(const std::string &uid);
+  bool unmount(const std::string &uid);
+
+  // TODO: Add a Mount function
 }
 
 #endif  // SRC_USB_DRIVER_H_

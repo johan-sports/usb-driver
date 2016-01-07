@@ -64,9 +64,9 @@ namespace USBDriver
     return uid;
   }
 
-  bool Unmount(const std::string &uid)
+  bool unmount(const std::string &uid)
   {
-    USBDevicePtr usbInfo = GetDevice(uid);
+    USBDevicePtr usbInfo = getDevice(uid);
 
     // Only unmount if we're actually mounted
     if (usbInfo != nullptr && !usbInfo->mountPoint.empty()) {
@@ -105,7 +105,7 @@ namespace USBDriver
     return false;
   }
 
-  USBDevicePtr GetDevice(const std::string &uid)
+  USBDevicePtr getDevice(const std::string &uid)
   {
     return gAllDevices[uid];
   }
@@ -207,7 +207,7 @@ namespace USBDriver
     return usbInfo;
   }
 
-  std::vector<USBDevicePtr> GetDevices()
+  std::vector<USBDevicePtr> getDevices()
   {
     mach_port_t masterPort;
     kern_return_t kr = IOMasterPort(MACH_PORT_NULL, &masterPort);

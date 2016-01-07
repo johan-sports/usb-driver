@@ -48,11 +48,11 @@ namespace USBDriver
       }                                                               \
       while (0)
 
-#define OBJ_ATTR_NUMBER(name, val)                                       \
-      do {                                                               \
-        Local<String> _name = String::NewFromUtf8(isolate, name);        \
+#define OBJ_ATTR_NUMBER(name, val)                                      \
+      do {                                                              \
+        Local<String> _name = String::NewFromUtf8(isolate, name);       \
         obj->Set(_name, Number::New(isolate, static_cast<double>(val))); \
-      }                                                                  \
+      }                                                                 \
       while(0)
 
       OBJ_ATTR_STR("id", usbDrive->uid);
@@ -80,17 +80,16 @@ namespace USBDriver
       String::Utf8Value utf8_string(info[0]->ToString());
       Local<Boolean> ret;
 
-      if(USBDriver::Unmount(*utf8_string)) {
-      ret = Boolean::New(isolate, true);
-    } else {
-      ret = Boolean::New(isolate, false);
-    }
+      if(USBDriver::unmount(*utf8_string)) {
+        ret = Boolean::New(isolate, true);
+      } else {
+        ret = Boolean::New(isolate, false);
+      }
 
       info.GetReturnValue().Set(ret);
     }
 
-    void
-      GetDevice(const FunctionCallbackInfo<Value> &info)
+    void GetDevice(const FunctionCallbackInfo<Value> &info)
     {
       auto isolate = info.GetIsolate();
 
@@ -102,19 +101,19 @@ namespace USBDriver
 
       String::Utf8Value str(info[0]->ToString());
 
-      auto usbDrive = USBDriver::GetDevice(*str);
+      auto usbDrive = USBDriver::getDevice(*str);
 
       if(usbDrive == NULL) {
-      info.GetReturnValue().SetNull();
-    } else {
-      info.GetReturnValue().Set(USBDrive_to_Object(isolate, usbDrive));
-    }
+        info.GetReturnValue().SetNull();
+      } else {
+        info.GetReturnValue().Set(USBDrive_to_Object(isolate, usbDrive));
+      }
     }
 
     void PollDevices(const FunctionCallbackInfo<Value> &info)
     {
       auto isolate = info.GetIsolate();
-      auto devices = USBDriver::GetDevices();
+      auto devices = USBDriver::getDevices();
 
       Handle<Array> array = Array::New(isolate, devices.size());
 
@@ -122,10 +121,10 @@ namespace USBDriver
         THROW_AND_RETURN(isolate, "Array creation failed");
 
       for(size_t i = 0; i < devices.size(); ++i) {
-      auto device_obj = USBDrive_to_Object(isolate, devices[i]);
+        auto device_obj = USBDrive_to_Object(isolate, devices[i]);
 
-      array->Set((int)i, device_obj);
-    }
+        array->Set((int)i, device_obj);
+      }
 
       info.GetReturnValue().Set(array);
     }
@@ -136,8 +135,8 @@ namespace USBDriver
       NODE_SET_METHOD(exports, "getDevice", GetDevice);
       NODE_SET_METHOD(exports, "pollDevices", PollDevices);
     }
-    }  // namespace NodeJS
-    } // namepsace USBDriver
+  }  // namespace NodeJS
+} // namepsace USBDriver
 
-      NODE_MODULE(usb_driver, USBDriver::NodeJS::Init)
+NODE_MODULE(usb_driver, USBDriver::NodeJS::Init)
 
