@@ -44,7 +44,7 @@ namespace USBDriver
    */
   std::string _uniqueDeviceId(const USBDevice *device)
   {
-    static unsigned long numUnserializedDevices = 0;
+    static unsigned int numUnserializedDevices = 0;
     std::string uid;
 
     if (device->uid.empty()) {
@@ -59,7 +59,7 @@ namespace USBDriver
       else {
         char buf[100];
 
-        snprintf(buf, sizeof(buf), "0x%lx", numUnserializedDevices++);
+        snprintf(buf, sizeof(buf), "%i", numUnserializedDevices++);
 
         uid.append(buf);
       }
