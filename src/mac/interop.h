@@ -18,14 +18,24 @@ char *cfStringRefToCString(CFStringRef cfString);
  */
 char *cfTypeToCString(CFTypeRef cfString);
 
+/**
+ * Convert a CFType to an integer
+ */
+int cfTypeToInteger(CFTypeRef cfString);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Working with data structures
 ////////////////////////////////////////////////////////////////////////////////
-#define PROP_VAL(dict, key)                                   \
+#define PROP_VAL_STR(dict, key)                               \
   ({                                                          \
     CFTypeRef _str = CFDictionaryGetValue(dict, CFSTR(key));  \
     cfTypeToCString(_str);                                    \
   })
 
+#define PROP_VAL_INT(dict, key)                               \
+  ({                                                          \
+    CFTypeRef _num = CFDictionaryGetValue(dict, CFSTR(key));  \
+    cfTypeToInteger(_num);                                    \
+  })
 
 #endif // _USB_DRIVER_MAC_UTILS_H__

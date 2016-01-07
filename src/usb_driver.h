@@ -8,9 +8,9 @@ namespace USBDriver
 {
   typedef struct USBDevice {
     std::string uid;
-    std::string locationID;
-    std::string productID;
-    std::string vendorID;
+    int locationID;
+    int productID;
+    int vendorID;
     std::string product;
     std::string serialNumber;
     std::string vendor;

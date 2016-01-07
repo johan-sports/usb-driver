@@ -1,15 +1,21 @@
 #ifndef _USB_DRIVER_UTILS_FORMATTERS_H__
 #define _USB_DRIVER_UTILS_FORMATTERS_H__
 
+#include <string>
+#include <stdlib.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 // Formatters
 ////////////////////////////////////////////////////////////////////////////////
-#define HEXIFY(str)                                           \
-  do {                                                        \
-    char _tmp[100];                                           \
-    snprintf(_tmp, sizeof _tmp, "0x%lx", atol(str.c_str()));  \
-    str = _tmp;                                               \
-  }                                                           \
-  while (0)
+template<typename T>
+std::string hexify(T val)
+{
+  std::string str = std::to_string(val);
+
+  char tmp[str.size()];
+  snprintf(tmp, sizeof(tmp), "0x%lx", atol(str.c_str()));
+
+  return tmp;
+}
 
 #endif // _USB_DRIVER_UTILS_FORMATTERS_H__

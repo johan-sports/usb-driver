@@ -19,7 +19,9 @@ char *cfStringRefToCString(CFStringRef cfString)
 
 char *cfTypeToCString(CFTypeRef cfString)
 {
-  if(!cfString) return "";
+  if(!cfString) {
+    return "";
+  }
 
   // Check that we're actually using a string
   if(CFGetTypeID(cfString) != CFStringGetTypeID()) {
@@ -58,3 +60,15 @@ char *cfTypeToCString(CFTypeRef cfString)
   return p;
 }
 
+int cfTypeToInteger(CFTypeRef cfNumber)
+{
+  if(CFGetTypeID(cfNumber) == CFNumberGetTypeID()) {
+    int num = 0;
+
+    CFNumberGetValue((CFNumberRef) cfNumber, kCFNumberIntType, &num);
+
+    return num;
+  } else {
+    throw "Invalid number passed to cfTypeToInteger";
+  }
+}

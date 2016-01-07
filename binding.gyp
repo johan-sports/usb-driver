@@ -1,5 +1,6 @@
 {
   'target_defaults': {
+
     'conditions': [
       ['OS=="win"', {
         'msvs_disabled_warnings': [
@@ -11,6 +12,7 @@
   },
   'targets': [
     {
+
       'target_name': 'usb_driver',
       'sources': [
         'src/usb_driver_module.cc'
@@ -21,8 +23,11 @@
             'src/mac/usb_driver.cc',
             'src/mac/interop.cc'
           ],
+          'cflags!': [ '-fno-exceptions' ],
+          'cflags_cc!': [ '-fno-exceptions' ],
           'xcode_settings': {
             'MACOSX_DEPLOYMENT_TARGET': '10.9',
+            'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',        # -fno-exceptions
             'OTHER_LDFLAGS': [
               '-framework Foundation',
               '-framework IOKit',

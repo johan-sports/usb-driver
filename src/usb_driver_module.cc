@@ -5,131 +5,139 @@
 
 // Throws a JS error and returns from the current function
 #define THROW_AND_RETURN(isolate, msg)                                  \
-    do {                                                                \
-        isolate->ThrowException(v8::Exception::TypeError(               \
-                                                         v8::String::NewFromUtf8(isolate, msg))); \
-        return;                                                         \
-    }                                                                   \
-    while(0)
+  do {                                                                  \
+    isolate->ThrowException(v8::Exception::TypeError(                   \
+                                                     v8::String::NewFromUtf8(isolate, msg))); \
+    return;                                                             \
+  }                                                                     \
+  while(0)
 
 namespace USBDriver
 {
-    namespace NodeJS
+  namespace NodeJS
+  {
+    using v8::FunctionCallbackInfo;
+    using v8::Isolate;
+    using v8::Local;
+    using v8::Handle;
+    using v8::Persistent;
+    using v8::Exception;
+
+    using v8::String;
+    using v8::Number;
+    using v8::Boolean;
+    using v8::Object;
+    using v8::Null;
+    using v8::Array;
+    using v8::Value;
+
+
+    static Local<Object> USBDrive_to_Object(Isolate *isolate, USBDriver::USBDevice *usbDrive)
     {
-        using v8::FunctionCallbackInfo;
-        using v8::Isolate;
-        using v8::Local;
-        using v8::Handle;
-        using v8::Persistent;
-        using v8::Exception;
+      Local<Object> obj = Object::New(isolate);
 
-        using v8::String;
-        using v8::Boolean;
-        using v8::Object;
-        using v8::Null;
-        using v8::Array;
-        using v8::Value;
+#define OBJ_ATTR_STR(name, val)                                       \
+      do {                                                            \
+        Local<String> _name = String::NewFromUtf8(isolate, name);     \
+        if (val.size() > 0) {                                         \
+          obj->Set(_name, String::NewFromUtf8(isolate, val.c_str())); \
+        }                                                             \
+        else {                                                        \
+          obj->Set(_name, Null(isolate));                             \
+        }                                                             \
+      }                                                               \
+      while (0)
 
+#define OBJ_ATTR_NUMBER(name, val)                                       \
+      do {                                                               \
+        Local<String> _name = String::NewFromUtf8(isolate, name);        \
+        obj->Set(_name, Number::New(isolate, static_cast<double>(val))); \
+      }                                                                  \
+      while(0)
 
-        static Local<Object> USBDrive_to_Object(Isolate *isolate, USBDriver::USBDevice *usbDrive)
-        {
-            Local<Object> obj = Object::New(isolate);
+      OBJ_ATTR_STR("id", usbDrive->uid);
+      OBJ_ATTR_NUMBER("productId", usbDrive->productID);
+      OBJ_ATTR_NUMBER("vendorId", usbDrive->vendorID);
+      OBJ_ATTR_STR("product", usbDrive->product);
+      OBJ_ATTR_STR("serialNumber", usbDrive->serialNumber);
+      OBJ_ATTR_STR("manufacturer", usbDrive->vendor);
+      OBJ_ATTR_STR("mount", usbDrive->mountPoint);
 
-#define OBJ_ATTR(name, val)                                             \
-            do {                                                        \
-                Local<String> _name = String::NewFromUtf8(isolate, name); \
-                if (val.size() > 0) {                                   \
-                    obj->Set(_name, String::NewFromUtf8(isolate, val.c_str())); \
-                }                                                       \
-                else {                                                  \
-                    obj->Set(_name, Null(isolate));                     \
-                }                                                       \
-            }                                                           \
-            while (0)
+#undef OBJ_ATTR_STR
+      return obj;
+    }
 
-            OBJ_ATTR("id", usbDrive->uid);
-            OBJ_ATTR("productId", usbDrive->productID);
-            OBJ_ATTR("vendorId", usbDrive->vendorID);
-            OBJ_ATTR("product", usbDrive->product);
-            OBJ_ATTR("serialNumber", usbDrive->serialNumber);
-            OBJ_ATTR("manufacturer", usbDrive->vendor);
-            OBJ_ATTR("mount", usbDrive->mountPoint);
+    void Unmount(const FunctionCallbackInfo<Value> &info)
+    {
+      auto isolate = info.GetIsolate();
 
-#undef OBJ_ATTR
-            return obj;
-        }
+      if(info.Length() < 1)
+        THROW_AND_RETURN(isolate, "Wrong number of arguments");
 
-        void Unmount(const FunctionCallbackInfo<Value> &info)
-        {
-            auto isolate = info.GetIsolate();
+      if(!info[0]->IsString())
+        THROW_AND_RETURN(isolate, "Expected the first argument to by of type string");
 
-            if(info.Length() < 1)
-                THROW_AND_RETURN(isolate, "Wrong number of arguments");
+      String::Utf8Value utf8_string(info[0]->ToString());
+      Local<Boolean> ret;
 
-            if(!info[0]->IsString())
-                THROW_AND_RETURN(isolate, "Expected the first argument to by of type string");
+      if(USBDriver::Unmount(*utf8_string)) {
+      ret = Boolean::New(isolate, true);
+    } else {
+      ret = Boolean::New(isolate, false);
+    }
 
-            String::Utf8Value utf8_string(info[0]->ToString());
-            Local<Boolean> ret;
+      info.GetReturnValue().Set(ret);
+    }
 
-            if(USBDriver::Unmount(*utf8_string)) {
-                ret = Boolean::New(isolate, true);
-            } else {
-                ret = Boolean::New(isolate, false);
-            }
+    void
+      GetDevice(const FunctionCallbackInfo<Value> &info)
+    {
+      auto isolate = info.GetIsolate();
 
-            info.GetReturnValue().Set(ret);
-        }
+      if(info.Length() < 1)
+        THROW_AND_RETURN(isolate, "Wrong number of arguments");
 
-        void
-        GetDevice(const FunctionCallbackInfo<Value> &info)
-        {
-            auto isolate = info.GetIsolate();
+      if(!info[0]->IsString())
+        THROW_AND_RETURN(isolate, "Expected the first argument to be of type string");
 
-            if(info.Length() < 1)
-                THROW_AND_RETURN(isolate, "Wrong number of arguments");
+      String::Utf8Value str(info[0]->ToString());
 
-            if(!info[0]->IsString())
-                THROW_AND_RETURN(isolate, "Expected the first argument to be of type string");
+      auto usbDrive = USBDriver::GetDevice(*str);
 
-            String::Utf8Value str(info[0]->ToString());
+      if(usbDrive == NULL) {
+      info.GetReturnValue().SetNull();
+    } else {
+      info.GetReturnValue().Set(USBDrive_to_Object(isolate, usbDrive));
+    }
+    }
 
-            auto usbDrive = USBDriver::GetDevice(*str);
+    void PollDevices(const FunctionCallbackInfo<Value> &info)
+    {
+      auto isolate = info.GetIsolate();
+      auto devices = USBDriver::GetDevices();
 
-            if(usbDrive == NULL) {
-                info.GetReturnValue().SetNull();
-            } else {
-                info.GetReturnValue().Set(USBDrive_to_Object(isolate, usbDrive));
-            }
-        }
+      Handle<Array> array = Array::New(isolate, devices.size());
 
-        void PollDevices(const FunctionCallbackInfo<Value> &info)
-        {
-            auto isolate = info.GetIsolate();
-            auto devices = USBDriver::GetDevices();
+      if(array.IsEmpty())
+        THROW_AND_RETURN(isolate, "Array creation failed");
 
-            Handle<Array> array = Array::New(isolate, devices.size());
+      for(size_t i = 0; i < devices.size(); ++i) {
+      auto device_obj = USBDrive_to_Object(isolate, devices[i]);
 
-            if(array.IsEmpty())
-                THROW_AND_RETURN(isolate, "Array creation failed");
+      array->Set((int)i, device_obj);
+    }
 
-            for(size_t i = 0; i < devices.size(); ++i) {
-                auto device_obj = USBDrive_to_Object(isolate, devices[i]);
+      info.GetReturnValue().Set(array);
+    }
 
-                array->Set((int)i, device_obj);
-            }
-
-            info.GetReturnValue().Set(array);
-        }
-
-        void Init(Handle<Object> exports)
-        {
-            NODE_SET_METHOD(exports, "unmount", Unmount);
-            NODE_SET_METHOD(exports, "getDevice", GetDevice);
-            NODE_SET_METHOD(exports, "pollDevices", PollDevices);
-        }
+    void Init(Handle<Object> exports)
+    {
+      NODE_SET_METHOD(exports, "unmount", Unmount);
+      NODE_SET_METHOD(exports, "getDevice", GetDevice);
+      NODE_SET_METHOD(exports, "pollDevices", PollDevices);
+    }
     }  // namespace NodeJS
-} // namepsace USBDriver
+    } // namepsace USBDriver
 
-NODE_MODULE(usb_driver, USBDriver::NodeJS::Init)
+      NODE_MODULE(usb_driver, USBDriver::NodeJS::Init)
 

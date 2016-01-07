@@ -48,9 +48,9 @@ namespace USBDriver
     std::string uid;
 
     if (device->uid.empty()) {
-      uid.append(device->vendorID);
+      uid.append(hexify(device->vendorID));
       uid.append("-");
-      uid.append(device->productID);
+      uid.append(hexify(device->productID));
       uid.append("-");
 
       if (!device->serialNumber.empty()) {
@@ -130,7 +130,7 @@ namespace USBDriver
   }
 
   // TODO: Make this referentialy transparent, in the way that it
-  // TODO: doesn't modify gAllDevices. 
+  // TODO: doesn't modify gAllDevices.
   static USBDevice *usbServiceObject(io_service_t usbService)
   {
     CFMutableDictionaryRef properties;
@@ -150,7 +150,7 @@ namespace USBDriver
     USBDevice_Mac *usbInfo_mac = nullptr;
 
 
-    std::string locationID = PROP_VAL(properties, "locationID");
+    int locationID = PROP_VAL_INT(properties, "locationID");
 
     for(const auto device : gAllDevices) {
       if(device->locationID == locationID) {
@@ -170,11 +170,11 @@ namespace USBDriver
 
 
     usbInfo->locationID    = locationID;
-    usbInfo->vendorID      = PROP_VAL(properties, kUSBVendorID);
-    usbInfo->productID     = PROP_VAL(properties, kUSBProductID);
-    usbInfo->serialNumber  = PROP_VAL(properties, kUSBSerialNumberString);
-    usbInfo->product       = PROP_VAL(properties, kUSBProductString);
-    usbInfo->vendor        = PROP_VAL(properties, kUSBVendorString);
+    usbInfo->vendorID      = PROP_VAL_INT(properties, kUSBVendorID);
+    usbInfo->productID     = PROP_VAL_INT(properties, kUSBProductID);
+    usbInfo->serialNumber  = PROP_VAL_STR(properties, kUSBSerialNumberString);
+    usbInfo->product       = PROP_VAL_STR(properties, kUSBProductString);
+    usbInfo->vendor        = PROP_VAL_STR(properties, kUSBVendorString);
 
     CFRelease(properties);
 
