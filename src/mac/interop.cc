@@ -24,7 +24,7 @@ char *cfTypeToCString(CFTypeRef cfString)
   // Check that we're actually using a string
   if(CFGetTypeID(cfString) != CFStringGetTypeID()) {
     // Attempt to convert it to a string
-    auto stringRef = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@"), cfString);
+    CFStringRef stringRef = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@"), cfString);
 
     return cfStringRefToCString(stringRef);
   }
