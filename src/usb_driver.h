@@ -8,24 +8,33 @@
 namespace USBDriver
 {
   typedef struct USBDevice {
-    std::string uid;
-    int locationID;
-    int productID;
-    int vendorID;
-    std::string product;
-    std::string serialNumber;
-    std::string vendor;
-    std::string mountPoint;
+    std::string uid;           // Unique ID for each device.
+    int locationID;            // USB Location ID data.
+    int productID;             // USB product ID data.
+    int vendorID;              // USB vendor ID data.
+    std::string product;       // The product name.
+    std::string serialNumber;  // the full serial number. Can be empty.
+    std::string vendor;        // The vendor name.
+    std::string mountPoint;    // The disk mount point. Can be empty.
   } USBDevice;
 
   // Shared resource to the USB device
   // TODO: Make all of this const
   typedef std::shared_ptr<USBDevice> USBDevicePtr;
 
+  /**
+   * Get data for all connected devices.
+   */
   std::vector<USBDevicePtr> GetDevices();
-  USBDevicePtr GetDevice(const std::string &device_id);
+  /**
+   * Get a device with the given UID.
+   */
+  USBDevicePtr GetDevice(const std::string &uid);
 
-  bool Unmount(const std::string &device_id);
+  /**
+   * Unmount the device with the given UID.
+   */
+  bool Unmount(const std::string &uid);
 }
 
 #endif  // SRC_USB_DRIVER_H_

@@ -17,6 +17,8 @@
 
 #include <DiskArbitration/DiskArbitration.h>
 
+#include <unordered_map>
+
 // The current OSX version
 const auto CURRENT_SUPPORTED_VERSION = __MAC_OS_X_VERSION_MAX_ALLOWED;
 // El Capitan is 101100 (in AvailabilityInternal.h)
@@ -26,9 +28,10 @@ const char *SERVICE_MATCHER = CURRENT_SUPPORTED_VERSION < EL_CAPITAN ? "IOUSBDev
 
 namespace USBDriver
 {
-  // TODO: Remove me!
-  static std::vector<USBDevicePtr> gAllDevices;
+  typedef std::unordered_map<std::string, USBDevicePtr> DeviceMap;
 
+  // TODO: Remove me!
+  static DeviceMap gAllDevices;
 
   /**
    * Generate a new UID for the given device
@@ -61,13 +64,9 @@ namespace USBDriver
     return uid;
   }
 
-
-  /**
-   * Unmount the device with the given identifier.
-   */
-  bool Unmount(const std::string &identifier)
+  bool Unmount(const std::string &uid)
   {
-    USBDevicePtr usbInfo = GetDevice(identifier);
+    USBDevicePtr usbInfo = GetDevice(uid);
 
     // Only unmount if we're actually mounted
     if (usbInfo != nullptr && !usbInfo->mountPoint.empty()) {
@@ -106,20 +105,22 @@ namespace USBDriver
     return false;
   }
 
-  /**
-   * Get the device with the given identifier.
-   */
-  USBDevicePtr GetDevice(const std::string &identifier)
+  USBDevicePtr GetDevice(const std::string &uid)
   {
-    auto foundDevice = std::find_if(gAllDevices.begin(),
-                                    gAllDevices.end(),
-                                    // Lambda that attempts to match the identifier
-                                    [&identifier](USBDevicePtr dev) { return identifier == dev->uid; });
+    return gAllDevices[uid];
+  }
 
-    if(foundDevice != gAllDevices.end())
-      return *foundDevice;
-    else
-      return nullptr;
+  static USBDevicePtr _findDeviceByLocationID(const DeviceMap &map, int locationID)
+  {
+    for(auto it = map.begin(); it != map.end(); ++it) {
+      auto device = it->second;
+
+      if(device->locationID == locationID) {
+        return device;
+      }
+    }
+
+    return nullptr;
   }
 
   // TODO: Make this referentialy transparent, in the way that it
@@ -137,24 +138,16 @@ namespace USBDriver
       return nullptr;
     }
 
-    // Get the given property
-
-    USBDevicePtr usbInfo = nullptr;
 
     int locationID = PROP_VAL_INT(properties, "locationID");
 
-    for(const auto device : gAllDevices) {
-      if(device->locationID == locationID) {
-        usbInfo = device;
-      }
-    }
+    // Attempt to receive the device
+    USBDevicePtr usbInfo = _findDeviceByLocationID(gAllDevices, locationID);
 
     if (usbInfo == nullptr) {
+      // We don't have one, so create a new one
       usbInfo = USBDevicePtr(new USBDevice);
-
-      gAllDevices.push_back(usbInfo);
     }
-
 
     usbInfo->locationID    = locationID;
     usbInfo->vendorID      = PROP_VAL_INT(properties, kUSBVendorID);
@@ -162,10 +155,12 @@ namespace USBDriver
     usbInfo->serialNumber  = PROP_VAL_STR(properties, kUSBSerialNumberString);
     usbInfo->product       = PROP_VAL_STR(properties, kUSBProductString);
     usbInfo->vendor        = PROP_VAL_STR(properties, kUSBVendorString);
+    usbInfo->uid           = _uniqueDeviceId(usbInfo);
 
     CFRelease(properties);
 
-    usbInfo->uid = _uniqueDeviceId(usbInfo);
+    // Register in storage
+    gAllDevices[usbInfo->uid] = usbInfo;
 
     CFStringRef bsdName = (CFStringRef)IORegistryEntrySearchCFProperty(usbService,
                                                                        kIOServicePlane,
