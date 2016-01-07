@@ -26,15 +26,6 @@ const char *SERVICE_MATCHER = CURRENT_SUPPORTED_VERSION < EL_CAPITAN ? "IOUSBDev
 
 namespace USBDriver
 {
-  /**
-   * Struct representing extra OS X disk data.
-   */
-  typedef struct USBDeviceMac {
-    std::string bsdDiskName;
-  } USBDeviceMac;
-
-  typedef std::shared_ptr<USBDeviceMac> USBDeviceMacPtr;
-
   // TODO: Remove me!
   static std::vector<USBDevicePtr> gAllDevices;
 
@@ -149,24 +140,18 @@ namespace USBDriver
     // Get the given property
 
     USBDevicePtr usbInfo = nullptr;
-    USBDeviceMacPtr usbInfo_mac = nullptr;
-
 
     int locationID = PROP_VAL_INT(properties, "locationID");
 
     for(const auto device : gAllDevices) {
       if(device->locationID == locationID) {
         usbInfo = device;
-        usbInfo_mac = std::static_pointer_cast<USBDeviceMac>(usbInfo->opaque);
       }
     }
 
     if (usbInfo == nullptr) {
       usbInfo = USBDevicePtr(new USBDevice);
 
-      usbInfo_mac = USBDeviceMacPtr(new USBDeviceMac);
-
-      usbInfo->opaque = std::static_pointer_cast<void>(usbInfo_mac);
       gAllDevices.push_back(usbInfo);
     }
 
@@ -191,8 +176,6 @@ namespace USBDriver
       char bsdNameBuf[4096];
       sprintf( bsdNameBuf, "/dev/%ss1", cfStringRefToCString(bsdName));
       char* bsdNameC = &bsdNameBuf[0];
-
-      usbInfo_mac->bsdDiskName = bsdNameC;
 
       DASessionRef daSession = DASessionCreate(kCFAllocatorDefault);
       assert(daSession != nullptr);

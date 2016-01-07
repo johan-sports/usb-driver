@@ -16,9 +16,6 @@ namespace USBDriver
     std::string serialNumber;
     std::string vendor;
     std::string mountPoint;
-
-    // Extra device data
-    std::shared_ptr<void> opaque;
   } USBDevice;
 
   // Shared resource to the USB device
