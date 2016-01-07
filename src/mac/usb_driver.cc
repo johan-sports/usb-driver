@@ -164,12 +164,14 @@ namespace USBDriver
 
 
     usbInfo->locationID = locationID;
-    usbInfo->vendorID = PROP_VAL(properties, "idVendor");
-    usbInfo->productID = PROP_VAL(properties, "idProduct");
-    elog("About to fail?\n");
-    usbInfo->serialNumber = PROP_VAL(properties, "USB Serial Number");
-    usbInfo->product = PROP_VAL(properties, "USB Product Name");
-    usbInfo->vendor = PROP_VAL(properties, "USB Vendor Name");
+    usbInfo->vendorID = PROP_VAL(properties, kUSBVendorID);
+    usbInfo->productID = PROP_VAL(properties, kUSBProductID);
+
+    elog("Getting %s\n", cfStringRefToCString(CFSTR(kUSBSerialNumberString)));
+    usbInfo->serialNumber = PROP_VAL(properties, kUSBSerialNumberString);
+
+    usbInfo->product = PROP_VAL(properties, kUSBProductString);
+    usbInfo->vendor = PROP_VAL(properties, kUSBVendorString);
 
     // Convert string to a hex format
     HEXIFY(usbInfo->productID);

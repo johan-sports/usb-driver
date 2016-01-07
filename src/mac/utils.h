@@ -22,6 +22,8 @@
  */
 char *cfStringRefToCString(CFStringRef cfString);
 /**
+ * Attempt to convert a CFTypeRef to a c string. This
+ * could possibly fail and currently causes segfaults.
  */
 char *cfTypeToCString(CFTypeRef cfString);
 

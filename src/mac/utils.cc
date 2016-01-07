@@ -4,7 +4,7 @@
 
 char *cfStringRefToCString(CFStringRef cfString)
 {
-  if (!cfString) return nullptr;
+  if (!cfString) return "";
 
   static char string[2048];
 
@@ -19,7 +19,7 @@ char *cfStringRefToCString(CFStringRef cfString)
 
 char *cfTypeToCString(CFTypeRef cfString)
 {
-  if (!cfString) return nullptr;
+  if(!cfString) return "";
 
   // Check that we're actually using a string
   if(CFGetTypeID(cfString) != CFStringGetTypeID()) {
