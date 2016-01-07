@@ -33,6 +33,7 @@ namespace USBDriver
     std::string bsdDiskName;
   } USBDevice_Mac;
 
+  // TODO: Remove me!
   static std::vector<USBDevice *> gAllDevices;
 
 
@@ -128,6 +129,8 @@ namespace USBDriver
       return nullptr;
   }
 
+  // TODO: Make this referentialy transparent, in the way that it
+  // TODO: doesn't modify gAllDevices. 
   static USBDevice *usbServiceObject(io_service_t usbService)
   {
     CFMutableDictionaryRef properties;

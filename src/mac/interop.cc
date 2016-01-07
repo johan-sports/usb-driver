@@ -24,7 +24,9 @@ char *cfTypeToCString(CFTypeRef cfString)
   // Check that we're actually using a string
   if(CFGetTypeID(cfString) != CFStringGetTypeID()) {
     // Attempt to convert it to a string
-    cfString = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@"), cfString);
+    auto stringRef = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@"), cfString);
+
+    return cfStringRefToCString(stringRef);
   }
 
   static char deviceFilePath[2048];
@@ -35,6 +37,9 @@ char *cfTypeToCString(CFTypeRef cfString)
                      deviceFilePath,
                      MAXPATHLEN,
                      kCFStringEncodingASCII);
+
+  #include "../utils/logger.h"
+  elog("Device path: %s\n", deviceFilePath);
 
   char* p = deviceFilePath;
 
@@ -52,6 +57,9 @@ char *cfTypeToCString(CFTypeRef cfString)
 
   if (isdigit(*p))
     *p = 'x';
+
+
+  elog("Converted format: %s\n", p);
 
   return p;
 }

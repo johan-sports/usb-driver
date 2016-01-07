@@ -48,8 +48,8 @@ namespace USBDriver
             while (0)
 
             OBJ_ATTR("id", usbDrive->uid);
-            OBJ_ATTR("productCode", usbDrive->productID);
-            OBJ_ATTR("vendorCode", usbDrive->vendorID);
+            OBJ_ATTR("productId", usbDrive->productID);
+            OBJ_ATTR("vendorId", usbDrive->vendorID);
             OBJ_ATTR("product", usbDrive->product);
             OBJ_ATTR("serialNumber", usbDrive->serialNumber);
             OBJ_ATTR("manufacturer", usbDrive->vendor);
