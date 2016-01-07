@@ -39,12 +39,7 @@
                 '-lsetupapi.lib'
 	     ]
 	  }
-        }],
-        ['OS=="linux"', {
-          'sources': [
-            'src/linux/usb_driver.cc',
-          ],
-        }],
+        }]
       ],
     }
   ]

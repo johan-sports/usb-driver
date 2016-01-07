@@ -38,6 +38,8 @@ namespace USBDriver
 
   /**
    * Generate a new UID for the given device
+   *
+   * TODO: Make this re-usable
    */
   std::string _uniqueDeviceId(const USBDevice *device)
   {
