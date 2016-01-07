@@ -11,7 +11,6 @@
     "url": "git://github.com/CargoSense/usb-driver.git"
   },
   "dependencies": {
-    "bluebird": "^3.1.1"
   },
   "keywords": [
     "usb"

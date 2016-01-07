@@ -1,4 +1,3 @@
-var Promise = require('bluebird');
 var USBNativeDriver = require('../build/Release/usb_driver.node');
 
 /*
