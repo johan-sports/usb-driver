@@ -31,7 +31,7 @@ var usbDriver = require('usb-driver')();
 Use `getAll()`:
 
 ```js
-usbDriver.getAll().then(function(devices) {
+usbDriver.pollDevices().then(function(devices) {
   /* ... do something with devices ... */
 }).catch(function(err) { /* ... error handling */ });
 ```
@@ -69,44 +69,6 @@ usbDriver.unmount(deviceId).then(function() {
 
 `deviceId` is the `id` provided in the device objects from `get()` or
 `getAll()`. See [Device Objects](#device-objects), below.
-
-### Events
-
-#### Watch for attach events
-
-```js
-usbDriver.on('attach', function(device) { /* ... */ });
-```
-
-`device` is a device object. See [Device Objects](#device-objects), below.
-
-#### Watch for detach events
-
-```js
-usbDriver.on('detach', function(device) { /* ... */ });
-```
-
-`device` is a device object. See [Device Objects](#device-objects), below.
-
-#### Watch for mount events
-
-When a USB device is mounted.
-
-```js
-usbDriver.on('mount', function(device) { /* ... */ });
-```
-
-`device` is a device object. See [Device Objects](#device-objects), below.
-
-#### Watch for unmount events
-
-When a USB device is unmounted.
-
-```js
-usbDriver.on('unmount', function(device) { /* ... */ });
-```
-
-`device` is a device object. See [Device Objects](#device-objects), below.
 
 ### Device Objects
 
