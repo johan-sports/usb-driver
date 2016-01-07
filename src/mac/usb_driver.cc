@@ -176,11 +176,6 @@ namespace USBDriver
     usbInfo->product       = PROP_VAL(properties, kUSBProductString);
     usbInfo->vendor        = PROP_VAL(properties, kUSBVendorString);
 
-    // Convert string to a hex format
-    HEXIFY(usbInfo->productID);
-    HEXIFY(usbInfo->vendorID);
-
-
     CFRelease(properties);
 
     usbInfo->uid = _uniqueDeviceId(usbInfo);
