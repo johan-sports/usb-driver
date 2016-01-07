@@ -38,9 +38,6 @@ char *cfTypeToCString(CFTypeRef cfString)
                      MAXPATHLEN,
                      kCFStringEncodingASCII);
 
-  #include "../utils/logger.h"
-  elog("Device path: %s\n", deviceFilePath);
-
   char* p = deviceFilePath;
 
   while (*p != '\"')
@@ -57,9 +54,6 @@ char *cfTypeToCString(CFTypeRef cfString)
 
   if (isdigit(*p))
     *p = 'x';
-
-
-  elog("Converted format: %s\n", p);
 
   return p;
 }
