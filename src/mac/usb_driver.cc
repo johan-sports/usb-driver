@@ -187,7 +187,7 @@ namespace USBDriver
                                                                        kIORegistryIterateRecursively);
     if (bsdName != nullptr) {
       char bsdNameBuf[4096];
-      sprintf( bsdNameBuf, "/dev/%ss1", Utils::cfStringRefToCString(bsdName));
+      sprintf( bsdNameBuf, "/dev/%ss1", cfStringRefToCString(bsdName));
       char* bsdNameC = &bsdNameBuf[0];
 
       usbInfo_mac->bsdDiskName = bsdNameC;
@@ -204,7 +204,7 @@ namespace USBDriver
         if (desc != nullptr) {
           //CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
           CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
-          char* volumeName = Utils::cfTypeToCString(str);
+          char* volumeName = cfTypeToCString(str);
 
           if (volumeName && strlen(volumeName))
             {
