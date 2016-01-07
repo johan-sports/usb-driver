@@ -19,7 +19,7 @@
         ['OS=="mac"', {
           'sources': [
             'src/mac/usb_driver.cc',
-            'src/mac/utils.cc'
+            'src/mac/interop.cc'
           ],
           'xcode_settings': {
             'MACOSX_DEPLOYMENT_TARGET': '10.9',

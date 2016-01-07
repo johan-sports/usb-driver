@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "interop.h"
 
 #include <sys/param.h>
 
@@ -52,8 +52,6 @@ char *cfTypeToCString(CFTypeRef cfString)
 
   if (isdigit(*p))
     *p = 'x';
-
-  elog("C string: %s\n", p);
 
   return p;
 }
