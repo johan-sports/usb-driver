@@ -139,7 +139,7 @@ namespace USBDriver
     }
 
 
-    int locationID = PROP_VAL_INT(properties, "locationID");
+    int locationID = PROP_VAL_INT(properties, kUSBDevicePropertyLocationID);
 
     // Attempt to receive the device
     USBDevicePtr usbInfo = _findDeviceByLocationID(gAllDevices, locationID);
