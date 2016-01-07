@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace USBDriver
 {
@@ -16,11 +17,16 @@ namespace USBDriver
     std::string vendor;
     std::string mountPoint;
 
-    void *opaque;
+    // Extra device data
+    std::shared_ptr<void> opaque;
   } USBDevice;
 
-  std::vector<USBDevice*> GetDevices();
-  USBDevice *GetDevice(const std::string &device_id);
+  // Shared resource to the USB device
+  // TODO: Make all of this const
+  typedef std::shared_ptr<USBDevice> USBDevicePtr;
+
+  std::vector<USBDevicePtr> GetDevices();
+  USBDevicePtr GetDevice(const std::string &device_id);
 
   bool Unmount(const std::string &device_id);
 }

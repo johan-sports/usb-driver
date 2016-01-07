@@ -29,12 +29,14 @@ namespace USBDriver
   /**
    * Struct representing extra OS X disk data.
    */
-  typedef struct USBDevice_Mac {
+  typedef struct USBDeviceMac {
     std::string bsdDiskName;
-  } USBDevice_Mac;
+  } USBDeviceMac;
+
+  typedef std::shared_ptr<USBDeviceMac> USBDeviceMacPtr;
 
   // TODO: Remove me!
-  static std::vector<USBDevice *> gAllDevices;
+  static std::vector<USBDevicePtr> gAllDevices;
 
 
   /**
@@ -42,7 +44,7 @@ namespace USBDriver
    *
    * TODO: Make this re-usable
    */
-  std::string _uniqueDeviceId(const USBDevice *device)
+  std::string _uniqueDeviceId(const USBDevicePtr device)
   {
     static unsigned int numUnserializedDevices = 0;
     std::string uid;
@@ -74,7 +76,7 @@ namespace USBDriver
    */
   bool Unmount(const std::string &identifier)
   {
-    struct USBDevice *usbInfo = GetDevice(identifier);
+    USBDevicePtr usbInfo = GetDevice(identifier);
 
     // Only unmount if we're actually mounted
     if (usbInfo != nullptr && !usbInfo->mountPoint.empty()) {
@@ -116,12 +118,12 @@ namespace USBDriver
   /**
    * Get the device with the given identifier.
    */
-  USBDevice *GetDevice(const std::string &identifier)
+  USBDevicePtr GetDevice(const std::string &identifier)
   {
     auto foundDevice = std::find_if(gAllDevices.begin(),
                                     gAllDevices.end(),
                                     // Lambda that attempts to match the identifier
-                                    [&identifier](const USBDevice *dev) { return identifier == dev->uid; });
+                                    [&identifier](USBDevicePtr dev) { return identifier == dev->uid; });
 
     if(foundDevice != gAllDevices.end())
       return *foundDevice;
@@ -131,7 +133,7 @@ namespace USBDriver
 
   // TODO: Make this referentialy transparent, in the way that it
   // TODO: doesn't modify gAllDevices.
-  static USBDevice *usbServiceObject(io_service_t usbService)
+  static USBDevicePtr usbServiceObject(io_service_t usbService)
   {
     CFMutableDictionaryRef properties;
     kern_return_t kr = IORegistryEntryCreateCFProperties(usbService,
@@ -146,8 +148,8 @@ namespace USBDriver
 
     // Get the given property
 
-    USBDevice *usbInfo = nullptr;
-    USBDevice_Mac *usbInfo_mac = nullptr;
+    USBDevicePtr usbInfo = nullptr;
+    USBDeviceMacPtr usbInfo_mac = nullptr;
 
 
     int locationID = PROP_VAL_INT(properties, "locationID");
@@ -155,16 +157,16 @@ namespace USBDriver
     for(const auto device : gAllDevices) {
       if(device->locationID == locationID) {
         usbInfo = device;
-        usbInfo_mac = static_cast<USBDevice_Mac *>(usbInfo->opaque);
+        usbInfo_mac = std::static_pointer_cast<USBDeviceMac>(usbInfo->opaque);
       }
     }
 
     if (usbInfo == nullptr) {
-      usbInfo = new USBDevice;
+      usbInfo = USBDevicePtr(new USBDevice);
 
-      usbInfo_mac = new USBDevice_Mac;
+      usbInfo_mac = USBDeviceMacPtr(new USBDeviceMac);
 
-      usbInfo->opaque = (void *)usbInfo_mac;
+      usbInfo->opaque = std::static_pointer_cast<void>(usbInfo_mac);
       gAllDevices.push_back(usbInfo);
     }
 
@@ -227,7 +229,7 @@ namespace USBDriver
     return usbInfo;
   }
 
-  std::vector<USBDevice *> GetDevices()
+  std::vector<USBDevicePtr> GetDevices()
   {
     mach_port_t masterPort;
     kern_return_t kr = IOMasterPort(MACH_PORT_NULL, &masterPort);
@@ -238,7 +240,7 @@ namespace USBDriver
 
     assert(usbMatching != nullptr);
 
-    std::vector<USBDevice *> devices;
+    std::vector<USBDevicePtr> devices;
 
     io_iterator_t iter = 0;
     kr = IOServiceGetMatchingServices(kIOMasterPortDefault,
@@ -255,7 +257,7 @@ namespace USBDriver
         io_service_t usbService;
 
         while ((usbService = IOIteratorNext(iter)) != 0) {
-          USBDevice *usbInfo = usbServiceObject(usbService);
+          USBDevicePtr usbInfo = usbServiceObject(usbService);
 
 
           if (usbInfo != nullptr) {

@@ -32,7 +32,7 @@ namespace USBDriver
     using v8::Value;
 
 
-    static Local<Object> USBDrive_to_Object(Isolate *isolate, USBDriver::USBDevice *usbDrive)
+    static Local<Object> USBDrive_to_Object(Isolate *isolate, USBDriver::USBDevicePtr usbDrive)
     {
       Local<Object> obj = Object::New(isolate);
 
