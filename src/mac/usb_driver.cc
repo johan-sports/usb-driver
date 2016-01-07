@@ -48,9 +48,9 @@ namespace USBDriver
     std::string uid;
 
     if (device->uid.empty()) {
-      uid.append(hexify(device->vendorID));
+      uid.append(std::to_string(device->vendorID));
       uid.append("-");
-      uid.append(hexify(device->productID));
+      uid.append(std::to_string(device->productID));
       uid.append("-");
 
       if (!device->serialNumber.empty()) {
