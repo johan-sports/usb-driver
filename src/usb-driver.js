@@ -1,8 +1,5 @@
 var Promise = require('bluebird');
-var DiskWatcher = require('./diskwatcher')();
 var USBNativeDriver = require('../build/Release/usb_driver.node');
-
-USBNativeDriver.registerWatcher(DiskWatcher);
 
 /*
 Device Object
@@ -17,45 +14,45 @@ Device Object
 }
 */
 
-var usbDriver;
+var usbDriver = function() {
+  var self = {};
 
-var USBDriver = function() {
-};
+  self.getAll  = getAll;
+  self.get     = get;
+  self.unmount = unmount;
 
-USBDriver.prototype.on = function(event, callback) {
-  DiskWatcher.on(event, callback);
-};
+  return self;
 
-USBDriver.prototype.getAll = function() {
-  return new Promise(function(resolve, reject) {
-    resolve(USBNativeDriver.getDevices());
-  });
-};
-
-USBDriver.prototype.get = function(id) {
-  return new Promise(function(resolve, reject) {
-    resolve(USBNativeDriver.getDevice(id));
-  });
-};
-
-USBDriver.prototype.unmount = function(deviceId) {
-  return new Promise(function(resolve, reject) {
-    if (USBNativeDriver.unmount(deviceId)) {
-      resolve(true);
-    } else {
-      reject();
-    }
-  });
-};
-
-USBDriver.prototype.waitForEvents = function() {
-  console.log("WARNING: This method will not return.");
-  USBNativeDriver.waitForEvents();
-};
-
-module.exports = function() {
-  if (!usbDriver) {
-    usbDriver = new USBDriver();
+  function getAll() {
+    return new Promise(function(resolve) {
+      resolve(USBNativeDriver.pollDevices());
+    });
   }
-  return usbDriver;
+
+  function get(id) {
+    return new Promise(function(resolve) {
+      resolve(USBNativeDriver.getDevice(id));
+    });
+  }
+
+  function unmount(id) {
+    return new Promise(function(resolve, reject) {
+      if(USBNativeDriver.unmount(id)) {
+        resolve();
+      } else {
+        reject();
+      }
+    });
+  }
 };
+
+//USBDriver.prototype.on = function(event, callback) {
+  //DiskWatcher.on(event, callback);
+//};
+
+//USBDriver.prototype.waitForEvents = function() {
+  //console.log("WARNING: This method will not return.");
+  //USBNativeDriver.waitForEvents();
+//};
+
+module.exports = usbDriver;

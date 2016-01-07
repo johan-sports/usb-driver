@@ -13,12 +13,13 @@
     {
       'target_name': 'usb_driver',
       'sources': [
-        'src/usb_driver_module.cc'
+        'src/usb_driver_module.cc',
+        'src/utils.cc'
       ],
       'conditions': [
         ['OS=="mac"', {
           'sources': [
-            'src/mac/usb_driver.mm',
+            'src/mac/usb_driver.cc',
           ],
           'xcode_settings': {
             'MACOSX_DEPLOYMENT_TARGET': '10.9',
