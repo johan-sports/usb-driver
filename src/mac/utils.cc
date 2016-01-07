@@ -23,7 +23,6 @@ char *cfTypeToCString(CFTypeRef cfString)
 
   // Check that we're actually using a string
   if(CFGetTypeID(cfString) != CFStringGetTypeID()) {
-    elog("Converting to string...\n");
     // Attempt to convert it to a string
     cfString = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@"), cfString);
   }
@@ -36,8 +35,6 @@ char *cfTypeToCString(CFTypeRef cfString)
                      deviceFilePath,
                      MAXPATHLEN,
                      kCFStringEncodingASCII);
-
-  elog("Device path: %s\n", deviceFilePath);
 
   char* p = deviceFilePath;
 
