@@ -7,13 +7,13 @@ describe('usbDriver', function() {
   beforeEach(function() {
     usbDriver = proxyquire('../src/usb-driver', {
       '../build/Release/usb_driver.node': nativeStub
-    })();
+    });
   });
 
 
   describe('#getAll()', function () {
     it('should return a promise for an array', function () {
-      usbDriver = require('../src/usb-driver')();
+      usbDriver = require('../src/usb-driver');
 
       assert.isFulfilled(usbDriver.getAll());
       assert.eventually.isArray(usbDriver.getAll());

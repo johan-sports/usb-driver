@@ -1,4 +1,4 @@
-var USBDriver = require('../src/usb-driver.js')();
+var USBDriver = require('../src/usb-driver.js');
 
 USBDriver.getAll()
   .then(function(usbDrives) {

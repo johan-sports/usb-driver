@@ -13,7 +13,7 @@ Device Object
 }
 */
 
-var usbDriver = function() {
+function usbDriverFactory() {
   var self = {};
 
   self.pollDevices  = pollDevices;
@@ -54,4 +54,4 @@ var usbDriver = function() {
   //USBNativeDriver.waitForEvents();
 //};
 
-module.exports = usbDriver;
+module.exports = usbDriverFactory();
