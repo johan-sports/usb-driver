@@ -41,9 +41,9 @@ namespace USBDriver
   std::string _uniqueDeviceId(const USBDevicePtr device)
   {
     static unsigned int numUnserializedDevices = 0;
-    std::string uid;
+    std::string uid = device->uid;
 
-    if (device->uid.empty()) {
+    if (uid.empty()) {
       uid.append(std::to_string(device->vendorID));
       uid.append("-");
       uid.append(std::to_string(device->productID));
