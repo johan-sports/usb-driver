@@ -1,0 +1,5 @@
+General TODO's to improve the project:
+
+1. Update windows version
+2. Check and enforce constness
+3. Removed shared state and globals (gAllDevices)
