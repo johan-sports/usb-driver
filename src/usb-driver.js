@@ -16,13 +16,13 @@ Device Object
 var usbDriver = function() {
   var self = {};
 
-  self.getAll  = getAll;
-  self.get     = get;
-  self.unmount = unmount;
+  self.pollDevices  = pollDevices;
+  self.get          = get;
+  self.unmount      = unmount;
 
   return self;
 
-  function getAll() {
+  function pollDevices() {
     return new Promise(function(resolve) {
       resolve(USBNativeDriver.pollDevices());
     });

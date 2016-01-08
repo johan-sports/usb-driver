@@ -28,7 +28,7 @@ var usbDriver = require('usb-driver')();
 
 #### Get a list of attached devices
 
-Use `getAll()`:
+Use `pollDevices()`:
 
 ```js
 usbDriver.pollDevices().then(function(devices) {
@@ -50,7 +50,7 @@ usbDriver.get(deviceId).then(function(device) {
 ```
 
 `deviceId` is the `id` provided in the device objects from
-`getAll()`, and `device` is a resulting device object. See
+`pollDevices()`, and `device` is a resulting device object. See
 [Device Objects](#device-objects), below.
 
 #### Unmount a (mass storage) device
@@ -68,7 +68,7 @@ usbDriver.unmount(deviceId).then(function() {
 ```
 
 `deviceId` is the `id` provided in the device objects from `get()` or
-`getAll()`. See [Device Objects](#device-objects), below.
+`pollDevices()`. See [Device Objects](#device-objects), below.
 
 ### Device Objects
 
