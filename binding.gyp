@@ -15,7 +15,8 @@
 
       'target_name': 'usb_driver',
       'sources': [
-        'src/usb_driver_module.cc'
+        'src/usb_driver_module.cc',
+        'src/utils/logger.cc'
       ],
       'conditions': [
         ['OS=="mac"', {

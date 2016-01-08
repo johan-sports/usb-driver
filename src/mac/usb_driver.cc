@@ -132,19 +132,25 @@ namespace USBDriver
                                                          &properties,
                                                          kCFAllocatorDefault,
                                                          kNilOptions);
+
+    CORE_DEBUG("Creating kernel interface...");
+
     if (kr != kIOReturnSuccess) {
-      dlog("IORegistryEntryCreateCFProperties() failed: %s", mach_error_string(kr));
+      //CORE_ERROR("IORegistryEntryCreateCFProperties() failed: " + std::to_string(mach_error_string(kr)));
 
       return nullptr;
     }
 
-
     int locationID = PROP_VAL_INT(properties, kUSBDevicePropertyLocationID);
 
+    CORE_DEBUG("Received location ID: " + std::to_string(locationID));
+
+    CORE_DEBUG("Attempting to find USB by location...");
     // Attempt to receive the device
     USBDevicePtr usbInfo = _findDeviceByLocationID(gAllDevices, locationID);
 
     if (usbInfo == nullptr) {
+      CORE_DEBUG("USB device not found, creating a new one...");
       // We don't have one, so create a new one
       usbInfo = USBDevicePtr(new USBDevice);
     }
@@ -227,7 +233,7 @@ namespace USBDriver
 
     if (kr != kIOReturnSuccess)
       {
-        dlog("IOServiceGetMatchingServices() failed: %s", mach_error_string(kr));
+        //CORE_ERROR("IOServiceGetMatchingServices() failed: %s", mach_error_string(kr));
       }
     else
       {

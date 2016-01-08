@@ -1,4 +1,5 @@
 #include "usb_driver.h"
+#include "utils.h"
 
 #include <v8.h>
 #include <node.h>
@@ -27,9 +28,10 @@ namespace USBDriver
     using v8::Number;
     using v8::Boolean;
     using v8::Object;
-    using v8::Null;
     using v8::Array;
     using v8::Value;
+    using v8::Null;
+    using v8::Undefined;
 
 
     static Local<Object> USBDrive_to_Object(Isolate *isolate, USBDriver::USBDevicePtr usbDrive)
@@ -129,8 +131,26 @@ namespace USBDriver
       info.GetReturnValue().Set(array);
     }
 
+    void SetLogFile(const FunctionCallbackInfo<Value> &info)
+    {
+      auto isolate = info.GetIsolate();
+
+      if(info.Length() < 1)
+        THROW_AND_RETURN(isolate, "Wrong number of arguments");
+
+      if(!info[0]->IsString())
+        THROW_AND_RETURN(isolate, "Expected the first argument to be of type string");
+
+      String::Utf8Value str(info[0]->ToString());
+
+      Logger::instance().setLogFile(*str);
+
+      info.GetReturnValue().Set(Undefined(isolate));
+    }
+
     void Init(Handle<Object> exports)
     {
+      NODE_SET_METHOD(exports, "setLogFile", SetLogFile);
       NODE_SET_METHOD(exports, "unmount", Unmount);
       NODE_SET_METHOD(exports, "getDevice", GetDevice);
       NODE_SET_METHOD(exports, "pollDevices", PollDevices);

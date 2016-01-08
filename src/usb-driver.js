@@ -19,6 +19,7 @@ function usbDriverFactory() {
   self.pollDevices  = pollDevices;
   self.get          = get;
   self.unmount      = unmount;
+  self.setLogFile   = setLogFile;
 
   return self;
 
@@ -42,6 +43,11 @@ function usbDriverFactory() {
         reject();
       }
     });
+  }
+
+  function setLogFile(filepath) {
+    // TODO: Validate file path
+    USBNativeDriver.setLogFile(filepath);
   }
 };
 
