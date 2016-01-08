@@ -37,8 +37,8 @@ void Logger::flush()
 }
 
 void Logger::fillOutputBuffer(std::string &outputBuffer, const std::string &tag,
-                      const std::string &msg, const char *funcName,
-                      const char *sourceFile,  unsigned int lineNum)
+                              const std::string &msg, const char *funcName,
+                              const char *sourceFile,  unsigned int lineNum)
 {
   if(!tag.empty())
     outputBuffer = "[" + tag + "] ";
