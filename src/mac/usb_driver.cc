@@ -196,9 +196,8 @@ namespace USBDriver
         CFDictionaryRef desc = DADiskCopyDescription(disk);
 
         if (desc != nullptr) {
-          //CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
-          CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
-          char* volumeName = cfTypeToCString(str);
+          CFStringRef str = (CFStringRef) CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
+          char* volumeName = cfStringRefToCString(str);
 
           CORE_INFO("Found volume name: " + std::string(volumeName));
 
