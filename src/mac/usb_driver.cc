@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 
+
 // The current OSX version
 const auto CURRENT_SUPPORTED_VERSION = __MAC_OS_X_VERSION_MAX_ALLOWED;
 // El Capitan is 101100 (in AvailabilityInternal.h)
@@ -136,7 +137,7 @@ namespace USBDriver
     CORE_DEBUG("Creating kernel interface...");
 
     if (kr != kIOReturnSuccess) {
-      //CORE_ERROR("IORegistryEntryCreateCFProperties() failed: " + std::to_string(mach_error_string(kr)));
+      CORE_ERROR("IORegistryEntryCreateCFProperties() failed: " + std::string(mach_error_string(kr)));
 
       return nullptr;
     }
@@ -145,7 +146,6 @@ namespace USBDriver
 
     CORE_DEBUG("Received location ID: " + std::to_string(locationID));
 
-    CORE_DEBUG("Attempting to find USB by location...");
     // Attempt to receive the device
     USBDevicePtr usbInfo = _findDeviceByLocationID(gAllDevices, locationID);
 
@@ -168,6 +168,8 @@ namespace USBDriver
     // Register in storage
     gAllDevices[usbInfo->uid] = usbInfo;
 
+    CORE_DEBUG("Attempting to access BSD name...");
+
     CFStringRef bsdName = (CFStringRef)IORegistryEntrySearchCFProperty(usbService,
                                                                        kIOServicePlane,
                                                                        CFSTR(kIOBSDNameKey),
@@ -178,19 +180,27 @@ namespace USBDriver
       sprintf( bsdNameBuf, "/dev/%ss1", cfStringRefToCString(bsdName));
       char* bsdNameC = &bsdNameBuf[0];
 
+      CORE_INFO("Found BSD Name: " + std::string(bsdNameC));
+
       DASessionRef daSession = DASessionCreate(kCFAllocatorDefault);
       assert(daSession != nullptr);
+
+      CORE_DEBUG("Creating disk interface..");
 
       DADiskRef disk = DADiskCreateFromBSDName(kCFAllocatorDefault,
                                                daSession, bsdNameC);
 
       if (disk != nullptr) {
+        CORE_DEBUG("Creating description...");
+
         CFDictionaryRef desc = DADiskCopyDescription(disk);
 
         if (desc != nullptr) {
           //CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
           CFTypeRef str = CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey);
           char* volumeName = cfTypeToCString(str);
+
+          CORE_INFO("Found volume name: " + std::string(volumeName));
 
           if (volumeName && strlen(volumeName))
             {
@@ -199,6 +209,8 @@ namespace USBDriver
               sprintf(volumePath, "/Volumes/%s", volumeName);
 
               usbInfo->mountPoint = volumePath;
+
+              CORE_INFO("Found volume path: " + std::string(volumePath));
             }
 
 
@@ -233,26 +245,29 @@ namespace USBDriver
 
     if (kr != kIOReturnSuccess)
       {
-        //CORE_ERROR("IOServiceGetMatchingServices() failed: %s", mach_error_string(kr));
+        CORE_ERROR("IOServiceGetMatchingServices() failed: %s" + std::string(mach_error_string(kr)));
       }
     else
       {
-
         io_service_t usbService;
 
         while ((usbService = IOIteratorNext(iter)) != 0) {
+          CORE_DEBUG("IOIteratorNext found USB device");
+
           USBDevicePtr usbInfo = usbServiceObject(usbService);
 
-
           if (usbInfo != nullptr) {
+            CORE_DEBUG("Adding USB info to cache");
             devices.push_back(usbInfo);
           }
 
+          CORE_DEBUG("Releasing USB service resources");
           IOObjectRelease(usbService);
         }
       }
 
 
+    CORE_DEBUG("Deallocating master port");
     mach_port_deallocate(mach_task_self(), masterPort);
 
     return devices;
