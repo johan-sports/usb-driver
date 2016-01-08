@@ -10,7 +10,7 @@ Cross-platform USB device metadata and events.
 
 ## Requirements
 
-* Node.js v0.12.x or higher
+* Node.js v5.x.x or higher
 
 ## Install
 
