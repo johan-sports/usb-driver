@@ -41,25 +41,26 @@ namespace USBDriver
    */
   std::string _uniqueDeviceId(const USBDevicePtr device)
   {
-    static unsigned int numUnserializedDevices = 0;
+    static unsigned long numUnserializedDevices = 0;
     std::string uid = device->uid;
 
     if (uid.empty()) {
       uid.append(std::to_string(device->vendorID));
       uid.append("-");
       uid.append(std::to_string(device->productID));
-      uid.append("-");
 
       if (!device->serialNumber.empty()) {
+        uid.append("-");
         uid.append(device->serialNumber);
       }
-      else {
-        char buf[100];
 
-        snprintf(buf, sizeof(buf), "%i", numUnserializedDevices++);
+      // Always generate unique ID data
+      char buf[100];
 
-        uid.append(buf);
-      }
+      snprintf(buf, sizeof(buf), "%lu", numUnserializedDevices++);
+
+      uid.append("-");
+      uid.append(buf);
     }
 
     return uid;
