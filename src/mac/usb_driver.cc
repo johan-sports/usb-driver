@@ -205,7 +205,7 @@ namespace USBDriver
           {
             CORE_ERROR("Could not get the file system representation of the volume path.");
           }
-          else if(volumePath && strlen(volumePath))
+          else if(strlen(volumePath))
           {
               usbInfo->mountPoint = volumePath;
 
