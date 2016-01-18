@@ -197,22 +197,20 @@ namespace USBDriver
         CFDictionaryRef desc = DADiskCopyDescription(disk);
 
         if (desc != nullptr) {
-          CFStringRef str = static_cast<CFStringRef>(CFDictionaryGetValue(desc, kDADiskDescriptionVolumeNameKey));
-          char* volumeName = cfStringRefToCString(str);
+          CFURLRef url    = static_cast<CFURLRef>(CFDictionaryGetValue(desc, kDADiskDescriptionVolumePathKey));
 
-          CORE_INFO("Found volume name: " + std::string(volumeName));
+          char volumePath[MAXPATHLEN];
 
-          if (volumeName && strlen(volumeName))
-            {
-              char volumePath[MAXPATHLEN];
-
-              sprintf(volumePath, "/Volumes/%s", volumeName);
-
+          if(!CFURLGetFileSystemRepresentation(url, true, (UInt8*) volumePath, MAXPATHLEN))
+          {
+            CORE_ERROR("Could not get the file system representation of the volume path.");
+          }
+          else if(volumePath && strlen(volumePath))
+          {
               usbInfo->mountPoint = volumePath;
 
               CORE_INFO("Found volume path: " + std::string(volumePath));
-            }
-
+          }
 
           CFRelease(desc);
         }
