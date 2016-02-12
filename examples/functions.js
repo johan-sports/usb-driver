@@ -1,6 +1,6 @@
 var USBDriver = require('../src/usb-driver.js');
 
-USBDriver.getAll()
+USBDriver.pollDevices()
   .then(function(usbDrives) {
     console.log("GetAll: "+usbDrives.length);
     console.log(usbDrives)
