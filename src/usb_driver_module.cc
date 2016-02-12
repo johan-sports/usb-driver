@@ -117,7 +117,7 @@ namespace USBDriver
       auto isolate = info.GetIsolate();
       auto devices = USBDriver::getDevices();
 
-      Handle<Array> array = Array::New(isolate, devices.size());
+      Handle<Array> array = Array::New(isolate, static_cast<int>(devices.size()));
 
       if(array.IsEmpty())
         THROW_AND_RETURN(isolate, "Array creation failed");

@@ -1,4 +1,5 @@
 #include "../usb_driver.h"
+#include "../usb_common.h"
 #include "../utils.h"
 #include "interop.h"
 
@@ -33,38 +34,6 @@ namespace USBDriver
 
   // TODO: Remove me!
   static DeviceMap gAllDevices;
-
-  /**
-   * Generate a new UID for the given device
-   *
-   * TODO: Make this re-usable
-   */
-  std::string _uniqueDeviceId(const USBDevicePtr device)
-  {
-    static unsigned long numUnserializedDevices = 0;
-    std::string uid = device->uid;
-
-    if (uid.empty()) {
-      uid.append(std::to_string(device->vendorID));
-      uid.append("-");
-      uid.append(std::to_string(device->productID));
-
-      if (!device->serialNumber.empty()) {
-        uid.append("-");
-        uid.append(device->serialNumber);
-      }
-
-      // Always generate unique ID data
-      char buf[100];
-
-      snprintf(buf, sizeof(buf), "%lu", numUnserializedDevices++);
-
-      uid.append("-");
-      uid.append(buf);
-    }
-
-    return uid;
-  }
 
   bool unmount(const std::string &uid)
   {
@@ -162,7 +131,7 @@ namespace USBDriver
     usbInfo->serialNumber  = PROP_VAL_STR(properties, kUSBSerialNumberString);
     usbInfo->product       = PROP_VAL_STR(properties, kUSBProductString);
     usbInfo->vendor        = PROP_VAL_STR(properties, kUSBVendorString);
-    usbInfo->uid           = _uniqueDeviceId(usbInfo);
+    usbInfo->uid           = uniqueDeviceID(usbInfo);
 
     CFRelease(properties);
 
