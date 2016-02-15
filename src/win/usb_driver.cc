@@ -1,12 +1,14 @@
 #include "../usb_driver.h"
 #include "../usb_common.h"
 
+#include "../utils.h"
+
 #include <windows.h>
 #include <windowsx.h>
-#include <setupapi.h>
 #include <devguid.h>
 #include <initguid.h>
 #include <usbiodef.h>
+#include <setupapi.h>
 #include <winioctl.h>
 #include <usbioctl.h>
 #include <cfgmgr32.h>
@@ -17,6 +19,131 @@
 
 #define FORMAT_FLAGS (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS)
 
+#define _PWSTR(str) reinterpret_cast<PWSTR>(str)
+
+////////////////////////////////////////////////////////////////////////////////
+// Dynamicaly loaded SetupAPI functions.
+////////////////////////////////////////////////////////////////////////////////
+typedef HDEVINFO (WINAPI *_SetupDiGetClassDevs) (
+	const GUID *ClassGuid,
+	PCTSTR Enumerator,
+	HWND hwndParent,
+	DWORD flags
+);
+
+typedef BOOL (WINAPI *_SetupDiGetDeviceRegistryProperty) (
+	HDEVINFO DeviceInfoSet,
+	PSP_DEVINFO_DATA DeviceInfoData,
+	DWORD Property,
+	PDWORD PropertyRegDataType,
+	PBYTE PropertyBuffer,
+	DWORD PropertyBufferSize,
+	PDWORD RequiredSize
+);
+
+typedef BOOL (WINAPI *_SetupDiGetDeviceInterfaceDetail) (
+	HDEVINFO DeviceInfoSet,
+	PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData,
+	PSP_DEVICE_INTERFACE_DETAIL_DATA DeviceInterfaceDetailData,
+	DWORD DeviceInterfaceDetailDataSize,
+	PDWORD RequiredSize,
+	PSP_DEVINFO_DATA DeviceInfoData
+);
+
+typedef BOOL(WINAPI *_SetupDiEnumDeviceInterfaces) (
+	HDEVINFO DeviceInfoSet,
+	PSP_DEVINFO_DATA DeviceInfoData,
+	const GUID *InterfaceClassGuid,
+	DWORD MemberIndex,
+	PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData
+);
+
+typedef BOOL (WINAPI *_SetupDiEnumDeviceInfo) (
+	HDEVINFO DeviceInfoSet,
+	DWORD MemberIndex,
+	PSP_DEVINFO_DATA DeviceInfoData
+);
+
+typedef CONFIGRET (WINAPI *_CM_Get_Device_ID) (
+  DEVINST dnDevInst,
+  PWSTR Buffer,
+  ULONG BufferLen,
+  ULONG ulFlags
+);
+
+typedef CONFIGRET (WINAPI *_CM_Get_Parent) (
+  PDEVINST pdnDevInst,
+  DEVINST dnDevInst,
+  ULONG ulFlags
+);
+
+_SetupDiGetClassDevs DLLSetupDiGetClassDevs;
+_SetupDiGetDeviceRegistryProperty DLLSetupDiGetDeviceRegistryProperty;
+_SetupDiGetDeviceInterfaceDetail DLLSetupDiGetDeviceInterfaceDetail;
+_SetupDiEnumDeviceInterfaces DLLSetupDiEnumDeviceInterfaces;
+_SetupDiEnumDeviceInfo DLLSetupDiEnumDeviceInfo;
+
+_CM_Get_Device_ID DLLCM_Get_Device_ID;
+_CM_Get_Parent DLLCM_Get_Parent;
+
+
+/*
+ * Dynamically load a function from a DLL reference.
+ *
+ * Returns NULL on failure.
+ */
+template<typename T>
+T _loadProcedure(HINSTANCE hDLL, const std::string &name)
+{
+	 T fn = (T) GetProcAddress(hDLL, name.c_str());
+
+	 // Throw a fatal error on load failure
+	 if (fn == nullptr) {
+     CORE_FATAL(name + " could not be linked.");
+	 }
+
+	 return fn;
+}
+
+HINSTANCE  _loadSetupApi()
+{
+	// Use as static to avoid reloading
+	static HINSTANCE hDLL = nullptr;
+
+	if (hDLL == nullptr) {
+		hDLL = LoadLibrary("setupapi.dll");
+	}
+
+	// Should be loaded now
+	if (!hDLL) {
+		// THROW A FATAL ERROR
+    CORE_FATAL("setupapi.dll failed to load.");
+	}
+
+  // Device setup procedures
+	DLLSetupDiGetClassDevs = _loadProcedure<_SetupDiGetClassDevs>(hDLL, "SetupDiGetClassDevsA");
+	DLLSetupDiGetDeviceRegistryProperty = _loadProcedure<_SetupDiGetDeviceRegistryProperty>(hDLL, "SetupDiGetDeviceRegistryPropertyA");
+	DLLSetupDiGetDeviceInterfaceDetail = _loadProcedure<_SetupDiGetDeviceInterfaceDetail>(hDLL, "SetupDiGetDeviceInterfaceDetailA");
+	DLLSetupDiEnumDeviceInterfaces = _loadProcedure<_SetupDiEnumDeviceInterfaces>(hDLL, "SetupDiEnumDeviceInterfaces");
+	DLLSetupDiEnumDeviceInfo = _loadProcedure<_SetupDiEnumDeviceInfo>(hDLL, "SetupDiEnumDeviceInfo");
+
+  // CM procedures
+  DLLCM_Get_Parent = _loadProcedure<_CM_Get_Parent>(hDLL, "CM_Get_Parent");
+  DLLCM_Get_Device_ID = _loadProcedure<_CM_Get_Device_ID>(hDLL, "CM_Get_Device_IDA");
+
+	return hDLL;
+}
+
+void _closeSetupApi(HINSTANCE hDLL)
+{
+	if (hDLL != nullptr) {
+		FreeLibrary(hDLL);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementation
+////////////////////////////////////////////////////////////////////////////////
 namespace USBDriver {
   typedef unsigned long ulong;
   typedef unsigned int  uint;
@@ -37,17 +164,6 @@ namespace USBDriver {
     return sp;
   }
 
-  static void _printError(const char *funcName)
-  {
-    DWORD error = GetLastError();
-    char *errorStr = nullptr;
-
-    FormatMessage(FORMAT_FLAGS, NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorStr, 0, NULL);
-    fprintf(stderr, "%s failed: error %d: %s", funcName, error, errorStr);
-
-    free(errorStr);
-  }
-
   static bool _deviceProperty(HDEVINFO hDeviceInfo, PSP_DEVINFO_DATA device_info_data,
                               DWORD property, std::string &buf_str)
   {
@@ -57,16 +173,14 @@ namespace USBDriver {
     char *buf = static_cast<char*>(malloc(bufLen));
     assert(buf != NULL);
 
-    bool ok = SetupDiGetDeviceRegistryProperty(hDeviceInfo, device_info_data,
+    bool ok = DLLSetupDiGetDeviceRegistryProperty(hDeviceInfo, device_info_data,
                                                property, NULL, (PBYTE)buf,
                                                bufLen, &nSize);
 
-    if (ok) {
+    if (ok)
       buf_str.assign(buf);
-    }
-    else {
-      _printError("SetupDiGetDeviceRegistryProperty()");
-    }
+    else
+      CORE_ERROR("Failed to get device registry property: " + std::to_string(property));
 
     free(buf);
 
@@ -136,23 +250,21 @@ namespace USBDriver {
   }
 
 
-  static ULONG _deviceNumberFromHandle(HANDLE handle, bool bReportError = true)
+  static ULONG _deviceNumberFromHandle(HANDLE handle)
   {
     STORAGE_DEVICE_NUMBER sdn;
     sdn.DeviceNumber = -1;
 
     DWORD bytesReturned = 0; // Ignored
 
-    if (DeviceIoControl(handle, IOCTL_STORAGE_GET_DEVICE_NUMBER, NULL, 0, &sdn,
+    if (!DeviceIoControl(handle, IOCTL_STORAGE_GET_DEVICE_NUMBER, NULL, 0, &sdn,
                         sizeof(sdn), &bytesReturned, NULL)) {
-      return sdn.DeviceNumber;
+      CORE_WARNING("Failed to get device number from handle.");
+
+      return -1;
     }
 
-    if (bReportError) {
-      _printError("DeviceIOControl(IOCTL_STORAGE_GET_DEVICE_NUMBER)");
-    }
-
-    return 0;
+    return sdn.DeviceNumber;
   }
 
   static std::string _driveForDeviceNumber(ULONG deviceNumber)
@@ -175,12 +287,12 @@ namespace USBDriver {
                                          FILE_FLAG_NO_BUFFERING | FILE_FLAG_RANDOM_ACCESS, NULL);
 
         if (driveHandle == INVALID_HANDLE_VALUE) {
-          _printError("CreateFileA()");
+          CORE_ERROR("Failed to get file handle to " + path);
           continue;
         }
 
-        ULONG num = _deviceNumberFromHandle(driveHandle, false);
-        if (num != 0) {
+        ULONG num = _deviceNumberFromHandle(driveHandle);
+        if (num != -1) {
           deviceDrivesCache[num] = c;
         }
 
@@ -209,22 +321,22 @@ namespace USBDriver {
 
     uint index = 0;
 
-    while(true) 
-      { 
+    while(true)
+      {
         SP_DEVINFO_DATA spDevInfoData = _createSPType<SP_DEVINFO_DATA>();
 
-        if (!SetupDiEnumDeviceInfo(hDeviceInfo, index, &spDevInfoData))
+        if (!DLLSetupDiEnumDeviceInfo(hDeviceInfo, index, &spDevInfoData))
           {
             if (GetLastError() != ERROR_NO_MORE_ITEMS)
-              _printError("SetupDiEnumDeviceInfo");
+              CORE_ERROR("Failed to retrieve device information.");
 
             break; // We're out of devices
           }
 
         SP_DEVICE_INTERFACE_DATA spDeviceInterfaceData = _createSPType<SP_DEVICE_INTERFACE_DATA>();
 
-        if (!SetupDiEnumDeviceInterfaces(hDeviceInfo, 0, guid, index, &spDeviceInterfaceData)) {
-          _printError("SetupDiEnumDeviceInterfaces()");
+        if (!DLLSetupDiEnumDeviceInterfaces(hDeviceInfo, 0, guid, index, &spDeviceInterfaceData)) {
+          CORE_ERROR("Failed to get device interfaces.");
           continue; // Invalid device, skip it
         }
 
@@ -260,9 +372,9 @@ namespace USBDriver {
 
     SP_DEVINFO_DATA spDeviceInfoData = _createSPType<SP_DEVINFO_DATA>();
 
-    if (!SetupDiGetDeviceInterfaceDetail(hDeviceInfo, &sp.inter, spDeviceInterfaceDetail,
+    if (!DLLSetupDiGetDeviceInterfaceDetail(hDeviceInfo, &sp.inter, spDeviceInterfaceDetail,
                                          interfaceDetailLen, &interfaceDetailLen, &spDeviceInfoData)) {
-      _printError("SetupDiGetDeviceInterfaceDetail()");
+      CORE_ERROR("Failed to retrieve device interface details.");
       return nullptr;
     }
 
@@ -271,7 +383,7 @@ namespace USBDriver {
                                NULL, OPEN_EXISTING, 0, NULL);
 
     if (handle == INVALID_HANDLE_VALUE) {
-      _printError("CreateFile()");
+      CORE_ERROR("Failed to create file handle");
       return nullptr;
     }
 
@@ -286,13 +398,12 @@ namespace USBDriver {
     CloseHandle(handle);
 
     DEVINST devInstParent;
-    if (CM_Get_Parent(&devInstParent, spDeviceInfoData.DevInst, 0)
-        != CR_SUCCESS) {
+    if (DLLCM_Get_Parent(&devInstParent, spDeviceInfoData.DevInst, 0) != CR_SUCCESS) {
       return nullptr;
     }
 
     char devInstParentID[MAX_DEVICE_ID_LEN];
-    if (CM_Get_Device_ID(devInstParent, devInstParentID, MAX_DEVICE_ID_LEN, 0) != CR_SUCCESS) {
+    if (DLLCM_Get_Device_ID(devInstParent, _PWSTR(devInstParentID), MAX_DEVICE_ID_LEN, 0) != CR_SUCCESS) {
       return nullptr;
     }
 
@@ -302,11 +413,6 @@ namespace USBDriver {
     }
 
     USBDevicePtr pUsbDevice = USBDevicePtr(new USBDevice());
-    //struct USBDrive_Win *pUsbDevice2 = new struct USBDrive_Win;
-    //assert(pUsbDevice2 != NULL);
-
-    //pUsbDevice->opaque = (void *)usb_info2;
-    //pUsbDevice2->device_inst = devInstParent;
 
     pUsbDevice->locationID = 0; // Not set.
     // Convert HEX values to integers
@@ -314,7 +420,7 @@ namespace USBDriver {
     pUsbDevice->vendorID = std::stoi(vid, nullptr, 0);
     pUsbDevice->product = deviceName;
     pUsbDevice->serialNumber = serial;
-    pUsbDevice->vendor = vendor; // TODO
+    pUsbDevice->vendor = vendor;
     pUsbDevice->mountPoint = mount;
     pUsbDevice->uid = uniqueDeviceID(pUsbDevice);
 
@@ -326,10 +432,12 @@ namespace USBDriver {
 
   std::vector<USBDevicePtr> getDevices()
   {
+    HINSTANCE hDLL = _loadSetupApi();
+
     std::vector<USBDevicePtr> ret;
 
     const GUID *guid = &GUID_DEVINTERFACE_DISK;
-    HDEVINFO hDeviceInfo = SetupDiGetClassDevs(guid, NULL, NULL,
+    HDEVINFO hDeviceInfo = DLLSetupDiGetClassDevs(guid, NULL, NULL,
                                                (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
 
     if (hDeviceInfo != INVALID_HANDLE_VALUE) {
@@ -345,6 +453,8 @@ namespace USBDriver {
         }
     }
 
+    _closeSetupApi(hDLL);
+
     return ret;
   }
 
@@ -355,27 +465,6 @@ namespace USBDriver {
 
   bool unmount(const std::string &uid)
   {
-    /*
-      struct USBDrive *pUsbDevice = GetDevice(device_id);
-      if (pUsbDevice == NULL || usb_info->mount.size() == 0) {
-      return false;
-      }
-
-      PNP_VETO_TYPE VetoType = PNP_VetoTypeUnknown;
-      char VetoName[MAX_PATH];
-      VetoName[0] = '\0';
-
-      if (CM_Request_Device_Eject(
-			((struct USBDrive_Win *)pUsbDevice->opaque)->device_inst,
-			&VetoType, VetoName, MAX_PATH, 0) == CR_SUCCESS) {
-			return true;
-      }
-      printf("error when requesting device eject %d: %s\n", VetoType, VetoName);
-      return false;
-		*/
-
-		throw "Not implemented";
-
-		return false;
+  	throw "Not implemented";
 	}
 }  // namespace usb_driver

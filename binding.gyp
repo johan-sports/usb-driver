@@ -43,9 +43,8 @@
           ],
           'link_settings': {
              'libraries': [
-                '-lsetupapi.lib'
-	     ]
-	  }
+             ]
+          }
         }]
       ],
     }
