@@ -16,7 +16,7 @@
       'target_name': 'usb_driver',
       'sources': [
         'src/usb_common.cc',
-        'src/usb_driver_module.cc',
+        'src/bindings.cc',
         'src/utils/logger.cc'
       ],
       'conditions': [
