@@ -25,7 +25,9 @@ namespace USBDriver {
   typedef unsigned long ulong;
   typedef unsigned int  uint;
 
-  static std::unordered_map<std::string, USBDevicePtr> gAllDevices;
+  typedef std::unordered_map<std::string, USBDevicePtr> DeviceMap;
+
+  static DeviceMap gAllDevices;
 
   /**
    * Create a new windows SP type and automatically set the property cbSize
@@ -192,6 +194,18 @@ namespace USBDriver {
     SP_DEVICE_INTERFACE_DETAIL_DATA *interDetails;
   } SPData;
 
+  static USBDevicePtr _findDeviceByLocationID(const DeviceMap &map, int locationID) {
+    for(auto it = map.begin(); it != map.end(); ++it) {
+      auto device = it->second;
+
+      if(device->locationID == locationID) {
+        return device;
+      }
+    }
+
+    return nullptr;
+  }
+
   std::vector<DeviceSPData> _deviceSPs(HDEVINFO hDeviceInfo, const GUID *guid)
   {
     std::vector<DeviceSPData> sps;
@@ -289,9 +303,19 @@ namespace USBDriver {
       return nullptr;
     }
 
-    USBDevicePtr pUsbDevice = USBDevicePtr(new USBDevice());
+    int locationID = static_cast<int>(deviceNumber);
 
-    pUsbDevice->locationID = 0; // Not set.
+    CORE_DEBUG("Found location ID: " + std::to_string(locationID));
+
+    USBDevicePtr pUsbDevice = _findDeviceByLocationID(gAllDevices, locationID);
+
+    if(!pUsbDevice) {
+      CORE_DEBUG("USB device with given location ID not found, creating a new one...");
+      pUsbDevice = USBDevicePtr(new USBDevice());
+    }
+
+    // Emulate location ID using device numbers
+    pUsbDevice->locationID = locationID;
     // Convert HEX values to integers
     pUsbDevice->productID = std::stoi(pid, nullptr, 0);
     pUsbDevice->vendorID = std::stoi(vid, nullptr, 0);
