@@ -19,131 +19,8 @@
 
 #define FORMAT_FLAGS (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS)
 
-#define _PWSTR(str) reinterpret_cast<PWSTR>(str)
+#define _PSTR(str) reinterpret_cast<PSTR>(str)
 
-////////////////////////////////////////////////////////////////////////////////
-// Dynamicaly loaded SetupAPI functions.
-////////////////////////////////////////////////////////////////////////////////
-typedef HDEVINFO (WINAPI *_SetupDiGetClassDevs) (
-	const GUID *ClassGuid,
-	PCTSTR Enumerator,
-	HWND hwndParent,
-	DWORD flags
-);
-
-typedef BOOL (WINAPI *_SetupDiGetDeviceRegistryProperty) (
-	HDEVINFO DeviceInfoSet,
-	PSP_DEVINFO_DATA DeviceInfoData,
-	DWORD Property,
-	PDWORD PropertyRegDataType,
-	PBYTE PropertyBuffer,
-	DWORD PropertyBufferSize,
-	PDWORD RequiredSize
-);
-
-typedef BOOL (WINAPI *_SetupDiGetDeviceInterfaceDetail) (
-	HDEVINFO DeviceInfoSet,
-	PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData,
-	PSP_DEVICE_INTERFACE_DETAIL_DATA DeviceInterfaceDetailData,
-	DWORD DeviceInterfaceDetailDataSize,
-	PDWORD RequiredSize,
-	PSP_DEVINFO_DATA DeviceInfoData
-);
-
-typedef BOOL(WINAPI *_SetupDiEnumDeviceInterfaces) (
-	HDEVINFO DeviceInfoSet,
-	PSP_DEVINFO_DATA DeviceInfoData,
-	const GUID *InterfaceClassGuid,
-	DWORD MemberIndex,
-	PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData
-);
-
-typedef BOOL (WINAPI *_SetupDiEnumDeviceInfo) (
-	HDEVINFO DeviceInfoSet,
-	DWORD MemberIndex,
-	PSP_DEVINFO_DATA DeviceInfoData
-);
-
-typedef CONFIGRET (WINAPI *_CM_Get_Device_ID) (
-  DEVINST dnDevInst,
-  PWSTR Buffer,
-  ULONG BufferLen,
-  ULONG ulFlags
-);
-
-typedef CONFIGRET (WINAPI *_CM_Get_Parent) (
-  PDEVINST pdnDevInst,
-  DEVINST dnDevInst,
-  ULONG ulFlags
-);
-
-_SetupDiGetClassDevs DLLSetupDiGetClassDevs;
-_SetupDiGetDeviceRegistryProperty DLLSetupDiGetDeviceRegistryProperty;
-_SetupDiGetDeviceInterfaceDetail DLLSetupDiGetDeviceInterfaceDetail;
-_SetupDiEnumDeviceInterfaces DLLSetupDiEnumDeviceInterfaces;
-_SetupDiEnumDeviceInfo DLLSetupDiEnumDeviceInfo;
-
-_CM_Get_Device_ID DLLCM_Get_Device_ID;
-_CM_Get_Parent DLLCM_Get_Parent;
-
-
-/*
- * Dynamically load a function from a DLL reference.
- *
- * Returns NULL on failure.
- */
-template<typename T>
-T _loadProcedure(HINSTANCE hDLL, const std::string &name)
-{
-	 T fn = (T) GetProcAddress(hDLL, name.c_str());
-
-	 // Throw a fatal error on load failure
-	 if (fn == nullptr) {
-     CORE_FATAL(name + " could not be linked.");
-	 }
-
-	 return fn;
-}
-
-HINSTANCE  _loadSetupApi()
-{
-	// Use as static to avoid reloading
-	static HINSTANCE hDLL = nullptr;
-
-	if (hDLL == nullptr) {
-		hDLL = LoadLibrary("setupapi.dll");
-	}
-
-	// Should be loaded now
-	if (!hDLL) {
-		// THROW A FATAL ERROR
-    CORE_FATAL("setupapi.dll failed to load.");
-	}
-
-  // Device setup procedures
-	DLLSetupDiGetClassDevs = _loadProcedure<_SetupDiGetClassDevs>(hDLL, "SetupDiGetClassDevsA");
-	DLLSetupDiGetDeviceRegistryProperty = _loadProcedure<_SetupDiGetDeviceRegistryProperty>(hDLL, "SetupDiGetDeviceRegistryPropertyA");
-	DLLSetupDiGetDeviceInterfaceDetail = _loadProcedure<_SetupDiGetDeviceInterfaceDetail>(hDLL, "SetupDiGetDeviceInterfaceDetailA");
-	DLLSetupDiEnumDeviceInterfaces = _loadProcedure<_SetupDiEnumDeviceInterfaces>(hDLL, "SetupDiEnumDeviceInterfaces");
-	DLLSetupDiEnumDeviceInfo = _loadProcedure<_SetupDiEnumDeviceInfo>(hDLL, "SetupDiEnumDeviceInfo");
-
-  // CM procedures
-  DLLCM_Get_Parent = _loadProcedure<_CM_Get_Parent>(hDLL, "CM_Get_Parent");
-  DLLCM_Get_Device_ID = _loadProcedure<_CM_Get_Device_ID>(hDLL, "CM_Get_Device_IDA");
-
-	return hDLL;
-}
-
-void _closeSetupApi(HINSTANCE hDLL)
-{
-	if (hDLL != nullptr) {
-		FreeLibrary(hDLL);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Implementation
-////////////////////////////////////////////////////////////////////////////////
 namespace USBDriver {
   typedef unsigned long ulong;
   typedef unsigned int  uint;
@@ -173,7 +50,7 @@ namespace USBDriver {
     char *buf = static_cast<char*>(malloc(bufLen));
     assert(buf != NULL);
 
-    bool ok = DLLSetupDiGetDeviceRegistryProperty(hDeviceInfo, device_info_data,
+    bool ok = SetupDiGetDeviceRegistryProperty(hDeviceInfo, device_info_data,
                                                property, NULL, (PBYTE)buf,
                                                bufLen, &nSize);
 
@@ -325,7 +202,7 @@ namespace USBDriver {
       {
         SP_DEVINFO_DATA spDevInfoData = _createSPType<SP_DEVINFO_DATA>();
 
-        if (!DLLSetupDiEnumDeviceInfo(hDeviceInfo, index, &spDevInfoData))
+        if (!SetupDiEnumDeviceInfo(hDeviceInfo, index, &spDevInfoData))
           {
             if (GetLastError() != ERROR_NO_MORE_ITEMS)
               CORE_ERROR("Failed to retrieve device information.");
@@ -335,7 +212,7 @@ namespace USBDriver {
 
         SP_DEVICE_INTERFACE_DATA spDeviceInterfaceData = _createSPType<SP_DEVICE_INTERFACE_DATA>();
 
-        if (!DLLSetupDiEnumDeviceInterfaces(hDeviceInfo, 0, guid, index, &spDeviceInterfaceData)) {
+        if (!SetupDiEnumDeviceInterfaces(hDeviceInfo, 0, guid, index, &spDeviceInterfaceData)) {
           CORE_ERROR("Failed to get device interfaces.");
           continue; // Invalid device, skip it
         }
@@ -372,7 +249,7 @@ namespace USBDriver {
 
     SP_DEVINFO_DATA spDeviceInfoData = _createSPType<SP_DEVINFO_DATA>();
 
-    if (!DLLSetupDiGetDeviceInterfaceDetail(hDeviceInfo, &sp.inter, spDeviceInterfaceDetail,
+    if (!SetupDiGetDeviceInterfaceDetail(hDeviceInfo, &sp.inter, spDeviceInterfaceDetail,
                                          interfaceDetailLen, &interfaceDetailLen, &spDeviceInfoData)) {
       CORE_ERROR("Failed to retrieve device interface details.");
       return nullptr;
@@ -398,12 +275,12 @@ namespace USBDriver {
     CloseHandle(handle);
 
     DEVINST devInstParent;
-    if (DLLCM_Get_Parent(&devInstParent, spDeviceInfoData.DevInst, 0) != CR_SUCCESS) {
+    if (CM_Get_Parent(&devInstParent, spDeviceInfoData.DevInst, 0) != CR_SUCCESS) {
       return nullptr;
     }
 
     char devInstParentID[MAX_DEVICE_ID_LEN];
-    if (DLLCM_Get_Device_ID(devInstParent, _PWSTR(devInstParentID), MAX_DEVICE_ID_LEN, 0) != CR_SUCCESS) {
+    if (CM_Get_Device_ID(devInstParent, _PSTR(devInstParentID), MAX_DEVICE_ID_LEN, 0) != CR_SUCCESS) {
       return nullptr;
     }
 
@@ -432,12 +309,10 @@ namespace USBDriver {
 
   std::vector<USBDevicePtr> getDevices()
   {
-    HINSTANCE hDLL = _loadSetupApi();
-
     std::vector<USBDevicePtr> ret;
 
     const GUID *guid = &GUID_DEVINTERFACE_DISK;
-    HDEVINFO hDeviceInfo = DLLSetupDiGetClassDevs(guid, NULL, NULL,
+    HDEVINFO hDeviceInfo = SetupDiGetClassDevs(guid, NULL, NULL,
                                                (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
 
     if (hDeviceInfo != INVALID_HANDLE_VALUE) {
@@ -452,8 +327,6 @@ namespace USBDriver {
           }
         }
     }
-
-    _closeSetupApi(hDLL);
 
     return ret;
   }

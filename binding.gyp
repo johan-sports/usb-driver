@@ -42,6 +42,7 @@
           ],
           'link_settings': {
              'libraries': [
+               'setupapi.lib'
              ]
           }
         }]
