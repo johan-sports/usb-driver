@@ -150,7 +150,7 @@ namespace USBDriver
 
     void Init(Handle<Object> exports)
     {
-      Logger::instance().setLogFile("debug.log");
+      Logger::instance().setLogFile("usb-driver.log");
 
       NODE_SET_METHOD(exports, "setLogFile", SetLogFile);
       NODE_SET_METHOD(exports, "unmount", Unmount);
