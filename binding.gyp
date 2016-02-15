@@ -12,7 +12,6 @@
   },
   'targets': [
     {
-
       'target_name': 'usb_driver',
       'sources': [
         'src/usb_common.cc',
