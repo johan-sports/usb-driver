@@ -1,6 +1,6 @@
 {
   "name": "usb-driver",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Cross-platform driver for USB device metadata and events",
   "main": "./src/usb-driver.js",
   "scripts": {
