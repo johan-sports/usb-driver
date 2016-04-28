@@ -284,6 +284,8 @@ namespace USBDriver {
     ULONG deviceNumber = _deviceNumberFromHandle(handle);
     if (deviceNumber != 0) {
       mount = _driveForDeviceNumber(deviceNumber);
+    } else {
+      CORE_ERROR("Failed to get device number for " + deviceName);
     }
 
     CloseHandle(handle);

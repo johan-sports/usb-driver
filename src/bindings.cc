@@ -8,7 +8,7 @@
 #define THROW_AND_RETURN(isolate, msg)                                  \
   do {                                                                  \
     isolate->ThrowException(v8::Exception::TypeError(                   \
-                                                     v8::String::NewFromUtf8(isolate, msg))); \
+                               v8::String::NewFromUtf8(isolate, msg))); \
     return;                                                             \
   }                                                                     \
   while(0)
