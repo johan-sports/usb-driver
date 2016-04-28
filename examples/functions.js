@@ -4,8 +4,9 @@ USBDriver.pollDevices()
   .then(function(usbDrives) {
     console.log("GetAll: "+usbDrives.length);
     console.log(usbDrives);
-    for(var i = 0;i<usbDrives.length;i++) {
-      USBDriver.get(usbDrives[i].id)
+
+    usbDrives.forEach(function(usbDrive) {
+      USBDriver.get(usbDrive.id)
         .then(function(usbDrive) {
           if (usbDrive) {
             console.log("Get: "+usbDrive.id);
@@ -23,5 +24,5 @@ USBDriver.pollDevices()
             console.log("Could not get "+usbDrives[i]);
           }
         });
-    }
+    });
   });
