@@ -3,13 +3,13 @@ var USBDriver = require('../src/usb-driver.js');
 USBDriver.pollDevices()
   .then(function(usbDrives) {
     console.log("GetAll: "+usbDrives.length);
-    console.log(usbDrives)
+    console.log(usbDrives);
     for(var i = 0;i<usbDrives.length;i++) {
       USBDriver.get(usbDrives[i].id)
         .then(function(usbDrive) {
           if (usbDrive) {
             console.log("Get: "+usbDrive.id);
-            console.log(usbDrive)
+            console.log(usbDrive);
             if (usbDrive.mount) {
               USBDriver.unmount(usbDrive.id)
                 .then(function() {
@@ -20,7 +20,7 @@ USBDriver.pollDevices()
                 });
             }
           } else {
-            console.log("Could not get "+usbDrives[i])
+            console.log("Could not get "+usbDrives[i]);
           }
         });
     }
