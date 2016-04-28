@@ -148,12 +148,9 @@ namespace USBDriver {
 
   static std::string _driveForDeviceNumber(ULONG deviceNumber)
   {
-    static std::unordered_map<ULONG, unsigned char> deviceDrivesCache;
-
-    if (deviceDrivesCache.empty()) {
       std::bitset<32> drives(GetLogicalDrives());
 
-      // We start iteration from C
+      // We start iteration from ANSI C (65)
       for (char c = 'D'; c <= 'Z'; c++) {
         if (!drives[c - 'A']) {
           continue;
@@ -171,22 +168,16 @@ namespace USBDriver {
         }
 
         ULONG num = _deviceNumberFromHandle(driveHandle);
-        if (num != -1) {
-          deviceDrivesCache[num] = c;
+        if (num == deviceNumber) {
+          return std::string(1, c).append(":");
         }
 
         CloseHandle(driveHandle);
       }
-    }
 
-    auto iter = deviceDrivesCache.find(deviceNumber);
-
-    if (iter == deviceDrivesCache.end()) {
+      CORE_ERROR("Failed to get drive for device number: " + std::to_string(deviceNumber));
       return "";
     }
-
-    return std::string(1, iter->second).append(":");
-  }
 
   typedef struct DeviceSPData {
     SP_DEVINFO_DATA info;
@@ -282,8 +273,16 @@ namespace USBDriver {
 
     std::string mount;
     ULONG deviceNumber = _deviceNumberFromHandle(handle);
-    if (deviceNumber != 0) {
+    if (deviceNumber != -1) {
       mount = _driveForDeviceNumber(deviceNumber);
+
+      CORE_DEBUG("Found device number: " + std::to_string(deviceNumber));
+
+      if(mount.empty()) {
+        CORE_DEBUG("Mount point not found");
+      } else {
+        CORE_DEBUG("Found mount point: " + mount);
+      }
     } else {
       CORE_ERROR("Failed to get device number for " + deviceName);
     }
