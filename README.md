@@ -2,6 +2,8 @@
 
 Cross-platform USB device metadata and events.
 
+Forked from: https://github.com/CargoSense/usb-driver
+
 ## Platforms
 
 * OSX
