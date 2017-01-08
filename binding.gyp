@@ -45,6 +45,17 @@
                'setupapi.lib'
              ]
           }
+        }],
+        ['OS=="linux"', {
+          'sources': [
+            'src/linux/usb_driver.cc',
+          ],
+          'cflags!': [ '-Wall', '-O2' ],
+          'link_settings': {
+            'libraries': [
+              '-ludev'
+            ]
+          }
         }]
       ],
     }

@@ -13,6 +13,7 @@ Forked from: https://github.com/CargoSense/usb-driver
 ## Requirements
 
 * Node.js v5.x.x or higher
+* libudev (Linux only)
 
 ## Install
 
